@@ -37,7 +37,7 @@ void patchDispService(void) {
         return;
     }
     // hook a core function of the disp service
-    intptr_t originalSomeDispCoreAddress
+    intptr_t originalSomeDispCoreAddress;
     #if defined(__aarch64__)
         originalSomeDispCoreAddress = getImageAddressByIndex(0, 0x1001BD260);
     #else
