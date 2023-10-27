@@ -36,12 +36,15 @@ void patchDispService(void) {
     if (!checkAppCFBundleVersion("54729")) {
         return;
     }
+    // hook a core function of the disp service
+    intptr_t originalSomeDispCoreAddress
     #if defined(__aarch64__)
-        // hook a core function of the disp service
-        intptr_t originalSomeDispCoreAddress = getImageAddressByIndex(0, 0x1001BD260);
-        int r = rd_route((void *)originalSomeDispCoreAddress, someDispCoreHook, (void **)&originalSomeDispCore);
-        NSLog(@"[bad_prl_disp_service] Hooked someDispCoreHook with status %d", r);
+        originalSomeDispCoreAddress = getImageAddressByIndex(0, 0x1001BD260);
+    #else
+        originalSomeDispCoreAddress = getImageAddressByIndex(0, 0x1001AA660);
     #endif
+    int r = rd_route((void *)originalSomeDispCoreAddress, someDispCoreHook, (void **)&originalSomeDispCore);
+    NSLog(@"[bad_prl_disp_service] Hooked someDispCoreHook with status %d", r);
 }
 
 + (void)load {
