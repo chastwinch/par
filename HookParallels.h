@@ -1,21 +1,18 @@
-//
-//  HookParallels.h
-//  HookParallels
-//
-//  Created by trueToastedCode on 27.10.23.
-//
+// HookParallels.h
 
-#ifndef HookParallels_h
-#define HookParallels_h
+#ifndef HOOK_PARALLELS_H
+#define HOOK_PARALLELS_H
 
 #import <Foundation/Foundation.h>
 #import "Utils.h"
-
-void*(*originalSomeDispCore)(void* args);
-void* someDispCoreHook(void* args);
-void patchDispService(void);
+#import "../rd_route/rd_route.h"
 
 @interface HookParallels : Utils
+
+- (void)patchDispatcher;
+- (void)patchVM;
+- (void)patch;
+
 @end
 
-#endif /* HookParallels_h */
+#endif
