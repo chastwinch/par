@@ -22,21 +22,24 @@
 #endif
 
 #ifdef VM_54729
-const char *pdfmDispDir = "/Applications/Parallels Desktop.app/Contents/MacOS/Parallels Service.app/Contents/MacOS",
-           *pdfmDispDst,
-           *pdfmDispDstPatch,
-           *pdfmDispDstBcup;
+const char *pdfmDispDst = "/Applications/Parallels Desktop.app/Contents/MacOS/Parallels Service.app/Contents/MacOS/prl_disp_service",
+           *pdfmDispPatchSuffix = "_patched",
+           *pdfmDispBcupSuffix = "_bcup";
 
 void*(*originalDispatcherCoreHook)(void*) = NULL;
 
 void* dispatcherCoreHook(void *arg) {
+    char *pdfmDispDstBcup = combineStrings(pdfmDispDst, pdfmDispBcupSuffix);
     int status = overwriteFileWithMemBuffer(pdfmDispDstBcup, pdfmDispDst);
+    free(pdfmDispDstBcup);
     if (status)
         NSLog(@"[bad_prl_service] [disp] restore original dispatcher failed with status %d", status);
 
     void *result = originalDispatcherCoreHook(arg);
 
+    char *pdfmDispDstPatch = combineStrings(pdfmDispDst, pdfmDispPatchSuffix);
     status = overwriteFileWithMemBuffer(pdfmDispDstPatch, pdfmDispDst);
+    free(pdfmDispDstPatch);
     if (status)
         NSLog(@"[bad_prl_service] [disp] restore patched dispatcher failed with status %d", status);
 
@@ -145,12 +148,6 @@ void* dispatcherCoreHook(void *arg) {
 }
 
 + (void)load {
-    #ifdef VM_54729
-        pdfmDispDst = combineStrings(pdfmDispDir, "/prl_disp_service");
-        pdfmDispDstPatch = combineStrings(pdfmDispDst, "_patched");
-        pdfmDispDstBcup = combineStrings(pdfmDispDst, "_bcup");
-    #endif
-    
     HookParallels *hookParallels = [[HookParallels alloc] init];
     [hookParallels patch];
 }
