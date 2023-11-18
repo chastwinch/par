@@ -33,10 +33,13 @@ void* dispatcherCoreHook(void *arg) {
     int status = overwriteFileWithMemBuffer(pdfmDispDstBcup, pdfmDispDst);
     if (status)
         NSLog(@"[bad_prl_service] [disp] restore original dispatcher failed with status %d", status);
+
     void *result = originalDispatcherCoreHook(arg);
+
     status = overwriteFileWithMemBuffer(pdfmDispDstPatch, pdfmDispDst);
     if (status)
         NSLog(@"[bad_prl_service] [disp] restore patched dispatcher failed with status %d", status);
+
     return result;
 }
 #endif
@@ -142,13 +145,14 @@ void* dispatcherCoreHook(void *arg) {
 }
 
 + (void)load {
-    HookParallels *hookParallels = [[HookParallels alloc] init];
-    [hookParallels patch];
     #ifdef VM_54729
         pdfmDispDst = combineStrings(pdfmDispDir, "/prl_disp_service");
         pdfmDispDstPatch = combineStrings(pdfmDispDst, "_patched");
         pdfmDispDstBcup = combineStrings(pdfmDispDst, "_bcup");
     #endif
+    
+    HookParallels *hookParallels = [[HookParallels alloc] init];
+    [hookParallels patch];
 }
 
 @end
