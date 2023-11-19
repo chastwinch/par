@@ -1,4 +1,5 @@
 # Makefile
+include variables.sh
 
 # Compiler and linker settings
 CC = clang
