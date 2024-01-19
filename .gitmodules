@@ -1,14 +1,14 @@
 [submodule "submodules/hook_parallels"]
 	path = submodules/hook_parallels
-	url = https://github.com/trueToastedCode/ParallelsLab.git
+	url = https://git.samipsolutions.fi/ParallelsLab/Parells.git
 	branch = hook-parallels
 [submodule "submodules/insert_dylib"]
 	path = submodules/insert_dylib
-	url = https://github.com/tyilo/insert_dylib.git
+	url = https://git.samipsolutions.fi/ParallelsLab/insert_dylib.git
 [submodule "submodules/rd_route"]
 	path = submodules/rd_route
-	url = https://github.com/trueToastedCode/rd_route.git
+	url = https://git.samipsolutions.fi/ParallelsLab/rd_route.git
 [submodule "submodules/mask"]
 	path = submodules/mask
-	url = https://github.com/trueToastedCode/mask.git
+	url = https://git.samipsolutions.fi/ParallelsLab/mask.git
 	branch = main
