@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Assistant Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232636;
+      --border: #2e3147;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --accent3: #43e97b;
+      --accent4: #f7971e;
+      --text: #e8eaf6;
+      --text-dim: #7b7f9e;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo svg { width: 32px; height: 32px; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .time-display {
+      text-align: right;
+    }
+
+    .time-display .clock {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .time-display .date {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .weather-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+    }
+
+    /* ── LAYOUT ── */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 73px);
+    }
+
+    /* ── SIDEBAR ── */
+    aside {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-section {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 8px 12px 4px;
+      margin-top: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(108,99,255,0.15); color: var(--accent); font-weight: 600; }
+
+    .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 1px 7px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* ── MAIN CONTENT ── */
+    main {
+      padding: 28px 32px;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      margin-top: 28px;
+    }
+
+    .section-title:first-child { margin-top: 0; }
+
+    /* ── CARDS GRID ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      border-color: rgba(108,99,255,0.4);
+    }
+
+    .card.on { border-color: rgba(108,99,255,0.5); }
+    .card.on::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(108,99,255,0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-size: 1.3rem;
+    }
+
+    .card-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-status {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    .card.on .card-status { color: var(--accent3); }
+
+    .toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 20px;
+      background: var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .card.on .toggle { background: var(--accent); }
+    .card.on .toggle::after { transform: translateX(16px); }
+
+    /* ── SLIDER CARD ── */
+    .card.slider-card .slider-wrap {
+      margin-top: 12px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    /* ── SENSOR ROW ── */
+    .sensors-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .sensor-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sensor-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .sensor-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sensor-unit {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    /* ── CAMERA / MAP CARD ── */
+    .wide-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .camera-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .camera-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .camera-header .label {
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .live-badge {
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .camera-preview {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #0a0c14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .camera-preview canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .camera-preview .cam-label {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.6);
+      background: rgba(0,0,0,0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── ENERGY CARD ── */
+    .energy-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .energy-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 80px;
+      margin-top: 16px;
+    }
+
+    .energy-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .energy-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.8s ease;
+    }
+
+    .energy-bar-label {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    /* ── AUTOMATIONS LIST ── */
+    .automation-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .automation-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    .automation-item:last-child { border-bottom: none; }
+    .automation-item:hover { background: var(--surface2); }
+
+    .automation-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .automation-name {
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    .automation-trigger {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .automation-toggle {
+      margin-left: auto;
+    }
+
+    /* ── MINI TOGGLE (inline) ── */
+    .mini-toggle {
+      width: 32px;
+      height: 18px;
+      background: var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .mini-toggle::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .mini-toggle.on { background: var(--accent3); }
+    .mini-toggle.on::after { transform: translateX(14px); }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── MEDIA CARD ── */
+    .media-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .media-player {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .album-art {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .track-info { flex: 1; min-width: 0; }
+
+    .track-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-artist {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .media-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .media-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+
+    .media-btn:hover { color: var(--text); }
+    .media-btn.play {
+      background: var(--accent);
+      color: #fff;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 42%;
+      transition: width 0.3s linear;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .dashboard { grid-template-columns: 1fr; }
+      aside { display: none; }
+      .wide-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill="#6c63ff"/>
+      <path d="M16 6L7 13v13h6v-8h6v8h6V13L16 6z" fill="white"/>
+    </svg>
+    <span>HomeBase</span>
+  </div>
+  <div class="header-right">
+    <div class="weather-pill">
+      <span>⛅</span>
+      <span id="weather-temp">22°C</span>
+      <span style="color:var(--text-dim)">·</span>
+      <span style="color:var(--text-dim);font-size:0.8rem">Partly Cloudy</span>
+    </div>
+    <div class="time-display">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date-display">---</div>
+    </div>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <!-- ── SIDEBAR ── -->
+  <aside>
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="setActive(this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="setActive(this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+      Persons
+      <span class="nav-badge">2</span>
+    </div>
+    <div class="nav-section">Rooms</div>
+    <div class="nav-item" onclick="setActive(this)">🛋️&nbsp;&nbsp;Living Room</div>
+    <div class="nav-item" onclick="setActive(this)">🛏️&nbsp;&nbsp;Bedroom</div>
+    <div class="nav-item" onclick="setActive(this)">🍳&nbsp;&nbsp;Kitchen</div>
+    <div class="nav-item" onclick="setActive(this)">🚿&nbsp;&nbsp;Bathroom</div>
+    <div class="nav-item" onclick="setActive(this)">🌿&nbsp;&nbsp;Garden</div>
+    <div class="nav-section">Settings</div>
+    <div class="nav-item" onclick="setActive(this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Settings
+    </div>
+    <div class="nav-item" onclick="setActive(this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      Alerts
+      <span class="nav-badge" style="background:var(--accent2)">3</span>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main>
+
+    <!-- Sensors Row -->
+    <div class="section-title">Sensors</div>
+    <div class="sensors-row">
+      <div class="sensor-card">
+        <div class="sensor-label">Indoor Temp</div>
+        <div class="sensor-value" style="color:#f7971e" id="temp-val">21.4</div>
+        <div class="sensor-unit">°C</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-label">Humidity</div>
+        <div class="sensor-value" style="color:#43e97b" id="hum-val">58</div>
+        <div class="sensor-unit">%</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-label">CO₂</div>
+        <div class="sensor-value" style="color:#6c63ff" id="co2-val">412</div>
+        <div class="sensor-unit">ppm</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-label">Air Quality</div>
+        <div class="sensor-value" style="color:#43e97b">Good</div>
+        <div class="sensor-unit">AQI 28</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-label">Motion</div>
+        <div class="sensor-value" style="color:#ff6584" id="motion-val">Clear</div>
+        <div class="sensor-unit">Living Room</div>
+      </div>
+    </div>
+
+    <!-- Lights & Devices -->
+    <div class="section-title">Lights &amp; Devices</div>
+    <div class="cards-grid" id="devices-grid">
+
+      <div class="card on" id="dev-ceiling" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(247,151,30,0.15);color:#f7971e">💡</div>
+        <div class="card-name">Ceiling Light</div>
+        <div class="card-status">On · 80%</div>
+      </div>
+
+      <div class="card" id="dev-floor" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(247,151,30,0.1);color:#7b7f9e">🪔</div>
+        <div class="card-name">Floor Lamp</div>
+        <div class="card-status">Off</div>
+      </div>
+
+      <div class="card on" id="dev-tv" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(108,99,255,0.15);color:#6c63ff">📺</div>
+        <div class="card-name">Smart TV</div>
+        <div class="card-status">On · Netflix</div>
+      </div>
+
+      <div class="card" id="dev-ac" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(67,233,123,0.1);color:#7b7f9e">❄️</div>
+        <div class="card-name">Air Conditioner</div>
+        <div class="card-status">Off</div>
+      </div>
+
+      <div class="card on" id="dev-fan" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(67,233,123,0.15);color:#43e97b">🌀</div>
+        <div class="card-name">Ceiling Fan</div>
+        <div class="card-status">On · Speed 2</div>
+      </div>
+
+      <div class="card" id="dev-door" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(255,101,132,0.1);color:#7b7f9e">🔒</div>
+        <div class="card-name">Front Door</div>
+        <div class="card-status">Locked</div>
+      </div>
+
+      <div class="card on" id="dev-router" onclick="toggleCard(this)">
+        <div class="toggle"></div>
+        <div class="card-icon" style="background:rgba(108,99,255,0.15);color:#6c63ff">📡</div>
+        <div class="card-name">Wi-Fi Router</div>
+        <div class="card-status">On · 12 devices</div>
+      </div>
+
+      <div class="card slider-card on" id="dev-blind" onclick="event.stopPropagation()">
+        <div class="toggle" onclick="toggleCard(document.getElementById('dev-blind'))"></div>
+        <div class="card-icon" style="background:rgba(247,151,30,0.15);color:#f7971e">🪟</div>
+        <div class="card-name">Blinds</div>
+        <div class="card-status" id="blind-val">Open · 70%</div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="100" value="70" oninput="updateBlind(this.value)" />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Camera + Energy -->
+    <div class="section-title">Cameras &amp; Energy</div>
+    <div class="wide-grid">
+
+      <!-- Camera card -->
+      <div class="camera-card">
+        <div class="camera-header">
+          <span class="label">Front Door Camera</span>
+          <span class="live-badge">● LIVE</span>
+        </div>
+        <div class="camera-preview">
+          <canvas id="cam-canvas"></canvas>
+          <div class="cam-label">CAM-01 · Front Door</div>
+        </div>
+      </div>
+
+      <!-- Energy card -->
+      <div class="energy-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="sensor-label">Power Usage</div>
+            <div class="sensor-value" style="color:#f7971e;margin-top:4px" id="power-val">1.84</div>
+            <div class="sensor-unit">kW current</div>
+          </div>
+          <div style="text-align:right">
+            <div class="sensor-label">Today</div>
+            <div style="font-size:1.1rem;font-weight:700;margin-top:4px;color:#43e97b">12.6 kWh</div>
+            <div class="sensor-unit">↓ 8% vs yesterday</div>
+          </div>
+        </div>
+        <div class="energy-bars" id="energy-bars">
+          <!-- filled by JS -->
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <!-- hours added by JS -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Media + Automations -->
+    <div class="section-title" style="margin-top:24px">Media &amp; Automations</div>
+    <div class="wide-grid">
+
+      <!-- Media player -->
+      <div class="media-card">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-size:0.75rem">Now Playing · Living Room</div>
+        <div class="media-player">
+          <div class="album-art">🎵</div>
+          <div class="track-info">
+            <div class="track-name">Midnight City</div>
+            <div class="track-artist">M83 · Hurry Up, We're Dreaming</div>
+          </div>
+        </div>
+        <div class="media-controls">
+          <button class="media-btn" title="Previous">⏮</button>
+          <button class="media-btn play" id="play-btn" onclick="togglePlay(this)" title="Play/Pause">▶</button>
+          <button class="media-btn" title="Next">⏭</button>
+          <div class="progress-bar" style="flex:1">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <span style="font-size:0.75rem;color:var(--text-dim)" id="track-time">1:42</span>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:0.8rem">🔈</span>
+          <input type="range" min="0" max="100" value="70" style="flex:1" oninput="this.nextElementSibling.textContent=this.value+'%'" />
+          <span style="font-size:0.75rem;color:var(--text-dim);width:32px">70%</span>
+        </div>
+      </div>
+
+      <!-- Automations -->
+      <div class="automation-list">
+        <div class="automation-item">
+          <div class="automation-icon" style="background:rgba(247,151,30,0.15);color:#f7971e">🌅</div>
+          <div>
+            <div class="automation-name">Good Morning</div>
+            <div class="automation-trigger">Weekdays at 7:00 AM</div>
+          </div>
+          <div class="mini-toggle on automation-toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="automation-item">
+          <div class="automation-icon" style="background:rgba(108,99,255,0.15);color:#6c63ff">🌙</div>
+          <div>
+            <div class="automation-name">Good Night</div>
+            <div class="automation-trigger">Daily at 10:30 PM</div>
+          </div>
+          <div class="mini-toggle on automation-toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="automation-item">
+          <div class="automation-icon" style="background:rgba(67,233,123,0.15);color:#43e97b">🚶</div>
+          <div>
+            <div class="automation-name">Away Mode</div>
+            <div class="automation-trigger">When everyone leaves</div>
+          </div>
+          <div class="mini-toggle automation-toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="automation-item">
+          <div class="automation-icon" style="background:rgba(255,101,132,0.15);color:#ff6584">🌡️</div>
+          <div>
+            <div class="automation-name">Temp Guard</div>
+            <div class="automation-trigger">When temp &gt; 26°C</div>
+          </div>
+          <div class="mini-toggle on automation-toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="automation-item">
+          <div class="automation-icon" style="background:rgba(108,99,255,0.15);color:#6c63ff">🎬</div>
+          <div>
+            <div class="automation-name">Movie Mode</div>
+            <div class="automation-trigger">When TV turns on after 8 PM</div>
+          </div>
+          <div class="mini-toggle automation-toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ── Clock ──
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2,'0');
+    const m = now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('clock').textContent = h + ':' + m;
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('date-display').textContent =
+      days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // ── Nav ──
+  function setActive(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ── Device toggles ──
+  function toggleCard(card) {
+    card.classList.toggle('on');
+    const status = card.querySelector('.card-status');
+    const name = card.querySelector('.card-name').textContent;
+    if (card.classList.contains('on')) {
+      if (name === 'Ceiling Light') status.textContent = 'On · 80%';
+      else if (name === 'Floor Lamp') status.textContent = 'On';
+      else if (name === 'Smart TV') status.textContent = 'On · Netflix';
+      else if (name === 'Air Conditioner') { status.textContent = 'On · 22°C'; card.querySelector('.card-icon').style.color = '#43e97b'; }
+      else if (name === 'Ceiling Fan') status.textContent = 'On · Speed 2';
+      else if (name === 'Front Door') { status.textContent = 'Unlocked'; card.querySelector('.card-icon').textContent = '🔓'; }
+      else if (name === 'Wi-Fi Router') status.textContent = 'On · 12 devices';
+      else status.textContent = 'On';
+    } else {
+      if (name === 'Front Door') { status.textContent = 'Locked'; card.querySelector('.card-icon').textContent = '🔒'; }
+      else if (name === 'Air Conditioner') { card.querySelector('.card-icon').style.color = '#7b7f9e'; status.textContent = 'Off'; }
+      else status.textContent = 'Off';
+    }
+  }
+
+  // ── Blinds slider ──
+  function updateBlind(val) {
+    document.getElementById('blind-val').textContent = 'Open · ' + val + '%';
+  }
+
+  // ── Energy bars ──
+  const hours = ['12a','2a','4a','6a','8a','10a','12p','2p','4p','6p','8p','10p'];
+  const energyData = [0.2,0.1,0.1,0.3,0.8,1.2,1.0,1.4,1.8,2.1,1.9,1.6];
+  const barsEl = document.getElementById('energy-bars');
+  const maxE = Math.max(...energyData);
+  hours.forEach((h, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'energy-bar-wrap';
+    const bar = document.createElement('div');
+    bar.className = 'energy-bar';
+    const pct = Math.round((energyData[i] / maxE) * 100);
+    bar.style.cssText = `height:${pct}%;background:linear-gradient(to top,#6c63ff,#a29bff);opacity:${0.5+energyData[i]/maxE*0.5}`;
+    const lbl = document.createElement('div');
+    lbl.className = 'energy-bar-label';
+    lbl.textContent = h;
+    wrap.appendChild(bar);
+    wrap.appendChild(lbl);
+    barsEl.appendChild(wrap);
+  });
+
+  // ── Media player ──
+  let playing = false;
+  let progress = 42;
+  let trackSec = 102;
+
+  function togglePlay(btn) {
+    playing = !playing;
+    btn.textContent = playing ? '⏸' : '▶';
+  }
+
+  setInterval(() => {
+    if (!playing) return;
+    progress = Math.min(100, progress + 0.05);
+    trackSec = Math.min(240, trackSec + 1);
+    document.getElementById('progress-fill').style.width = progress + '%';
+    const m = Math.floor(trackSec/60), s = trackSec%60;
+    document.getElementById('track-time').textContent = m + ':' + s.toString().padStart(2,'0');
+  }, 1000);
+
+  // ── Sensor simulation ──
+  function jitter(val, delta) {
+    return (val + (Math.random()-0.5)*delta*2).toFixed(1);
+  }
+
+  setInterval(() => {
+    const t = parseFloat(document.getElementById('temp-val').textContent);
+    const h = parseFloat(document.getElementById('hum-val').textContent);
+    const co2 = parseFloat(document.getElementById('co2-val').textContent);
+    document.getElementById('temp-val').textContent = jitter(t, 0.1);
+    document.getElementById('hum-val').textContent = Math.max(30,Math.min(80,Math.round(h+(Math.random()-.5)*2)));
+    document.getElementById('co2-val').textContent = Math.max(380,Math.min(600,Math.round(co2+(Math.random()-.5)*5)));
+    document.getElementById('power-val').textContent = jitter(1.84, 0.08);
+    // random motion
+    if (Math.random() < 0.05) {
+      const mv = document.getElementById('motion-val');
+      mv.textContent = mv.textContent === 'Clear' ? 'Detected' : 'Clear';
+      mv.style.color = mv.textContent === 'Detected' ? '#ff6584' : '#ff6584';
+    }
+  }, 3000);
+
+  // ── Camera canvas animation ──
+  const canvas = document.getElementById('cam-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCam() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+
+  function drawCam(t) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // sky gradient
+    const sky = ctx.createLinearGradient(0,0,0,H*0.55);
+    sky.addColorStop(0,'#0a1a2e');
+    sky.addColorStop(1,'#1a2a4e');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,W,H*0.55);
+
+    // moon
+    ctx.beginPath();
+    ctx.arc(W*0.82, H*0.15, 12, 0, Math.PI*2);
+    ctx.fillStyle='rgba(255,230,150,0.9)';
+    ctx.fill();
+
+    // stars
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    [[0.1,0.1],[0.25,0.07],[0.5,0.12],[0.62,0.04],[0.38,0.18],[0.72,0.16],[0.15,0.22]].forEach(([sx,sy])=>{
+      ctx.beginPath();
+      ctx.arc(sx*W, sy*H, 1.2, 0, Math.PI*2);
+      ctx.fill();
+    });
+
+    // ground
+    const ground = ctx.createLinearGradient(0,H*0.55,0,H);
+    ground.addColorStop(0,'#1a2a1a');
+    ground.addColorStop(1,'#0d1a0d');
+    ctx.fillStyle = ground;
+    ctx.fillRect(0,H*0.55,W,H*0.45);
+
+    // path
+    ctx.fillStyle='rgba(80,70,50,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(W*0.42,H*0.55);
+    ctx.lineTo(W*0.58,H*0.55);
+    ctx.lineTo(W*0.7,H);
+    ctx.lineTo(W*0.3,H);
+    ctx.closePath();
+    ctx.fill();
+
+    // gate posts
+    [[0.3,0.35],[0.7,0.35]].forEach(([px,ph])=>{
+      ctx.fillStyle='#8a8a7a';
+      ctx.fillRect(W*px-5, H*0.35, 10, H*0.25);
+    });
+
+    // gate
+    ctx.strokeStyle='rgba(140,130,110,0.8)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(W*0.3+5,H*0.38);
+    ctx.lineTo(W*0.5,H*0.38);
+    ctx.moveTo(W*0.7-5,H*0.38);
+    ctx.lineTo(W*0.5,H*0.38);
+    ctx.moveTo(W*0.3+5,H*0.46);
+    ctx.lineTo(W*0.5,H*0.46);
+    ctx.moveTo(W*0.7-5,H*0.46);
+    ctx.lineTo(W*0.5,H*0.46);
+    ctx.stroke();
+
+    // house silhouette
+    ctx.fillStyle='#111820';
+    ctx.fillRect(W*0.1, H*0.32, W*0.22, H*0.23);
+    ctx.beginPath();
+    ctx.moveTo(W*0.08,H*0.32);
+    ctx.lineTo(W*0.21,H*0.18);
+    ctx.lineTo(W*0.34,H*0.32);
+    ctx.closePath();
+    ctx.fill();
+
+    // house window glow
+    const wx = W*0.15, wy = H*0.38, ww = W*0.06, wh = H*0.06;
+    const wGlow = ctx.createRadialGradient(wx+ww/2,wy+wh/2,0,wx+ww/2,wy+wh/2,ww);
+    wGlow.addColorStop(0,'rgba(255,200,80,0.7)');
+    wGlow.addColorStop(1,'rgba(255,200,80,0)');
+    ctx.fillStyle=wGlow;
+    ctx.fillRect(wx-10,wy-10,ww+20,wh+20);
+    ctx.fillStyle='rgba(255,200,80,0.85)';
+    ctx.fillRect(wx,wy,ww,wh);
+
+    // lamppost
+    const lx = W*0.68;
+    ctx.strokeStyle='rgba(180,170,150,0.7)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(lx,H*0.72);
+    ctx.lineTo(lx,H*0.42);
+    ctx.lineTo(lx+10,H*0.38);
+    ctx.stroke();
+    const glow = ctx.createRadialGradient(lx+10,H*0.37,0,lx+10,H*0.37,40);
+    glow.addColorStop(0,'rgba(255,220,100,0.3)');
+    glow.addColorStop(1,'rgba(255,220,100,0)');
+    ctx.fillStyle=glow;
+    ctx.fillRect(lx-30,H*0.2,80,80);
+    ctx.beginPath();
+    ctx.arc(lx+10,H*0.37,5,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,230,120,0.95)';
+    ctx.fill();
+
+    // scan line
+    const scanY = (H*(0.25 + 0.5*((Math.sin(t*0.0008)+1)/2)));
+    ctx.fillStyle='rgba(0,255,80,0.04)';
+    ctx.fillRect(0,scanY,W,2);
+
+    // IR corners
+    ctx.strokeStyle='rgba(0,255,80,0.4)';
+    ctx.lineWidth=2;
+    const cs=14;
+    [[4,4],[W-4,4],[4,H-4],[W-4,H-4]].forEach(([cx,cy])=>{
+      ctx.beginPath();
+      const sx = cx<W/2?1:-1, sy = cy<H/2?1:-1;
+      ctx.moveTo(cx,cy+sy*cs); ctx.lineTo(cx,cy); ctx.lineTo(cx+sx*cs,cy);
+      ctx.stroke();
+    });
+
+    // timestamp overlay
+    ctx.fillStyle='rgba(0,255,80,0.7)';
+    ctx.font='bold 10px monospace';
+    const now = new Date();
+    ctx.fillText(now.toLocaleTimeString(), 8, H-8);
+  }
+
+  function animCam(t) {
+    if (canvas.offsetWidth > 0 && (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight)) {
+      resizeCam();
+    }
+    drawCam(t);
+    requestAnimationFrame(animCam);
+  }
+
+  window.addEventListener('resize', resizeCam);
+  resizeCam();
+  requestAnimationFrame(animCam);
+</script>
+</body>
+</html>
