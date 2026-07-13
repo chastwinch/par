@@ -1,0 +1,38 @@
+# ============================================================
+# Tooth Quest — Helper entities
+# Add this to configuration.yaml (or create the equivalent
+# helpers via Settings > Devices & Services > Helpers in the UI).
+# ============================================================
+
+input_number:
+  xeno_pocket_money:
+    name: Xeno Pocket Money
+    icon: mdi:cash
+    min: 0
+    max: 45
+    step: 0.01
+    unit_of_measurement: "£"
+    mode: box
+
+input_boolean:
+  xeno_brushed_am:
+    name: Xeno Brushed (AM)
+    icon: mdi:toothbrush
+
+  xeno_brushed_pm:
+    name: Xeno Brushed (PM)
+    icon: mdi:toothbrush
+
+  xeno_brushed_pending:
+    name: Xeno Brush Pending Review
+    icon: mdi:clock-alert
+
+# Not in the original brief, but required to make Automation 2
+# (approve/deny) work correctly: it remembers whether the pending
+# brush was an AM or PM attempt, so approving it later (possibly
+# well outside the AM/PM time window) still credits the right slot.
+input_text:
+  xeno_pending_period:
+    name: Xeno Pending Brush Period
+    icon: mdi:clock-outline
+    max: 10
