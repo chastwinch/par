@@ -183,4 +183,30 @@
     setTimeout(() => (suggestionsEl.hidden = true), 100);
   });
   searchInput.addEventListener("focus", handleInput);
+
+  // ---- Search / Scan mode toggle ----
+  const modeSearchBtn = document.getElementById("mode-search");
+  const modeScanBtn = document.getElementById("mode-scan");
+  const searchPanel = document.getElementById("search-panel");
+  const scanPanel = document.getElementById("scan-panel");
+
+  function setMode(mode) {
+    const isSearch = mode === "search";
+    modeSearchBtn.classList.toggle("active", isSearch);
+    modeScanBtn.classList.toggle("active", !isSearch);
+    modeSearchBtn.setAttribute("aria-selected", String(isSearch));
+    modeScanBtn.setAttribute("aria-selected", String(!isSearch));
+    searchPanel.hidden = !isSearch;
+    scanPanel.hidden = isSearch;
+    resultEl.hidden = true;
+
+    if (isSearch) {
+      handleInput();
+    } else if (window.stopBarcodeScanning) {
+      window.stopBarcodeScanning();
+    }
+  }
+
+  modeSearchBtn.addEventListener("click", () => setMode("search"));
+  modeScanBtn.addEventListener("click", () => setMode("scan"));
 })();
