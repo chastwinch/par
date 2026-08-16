@@ -54,6 +54,14 @@
       </form>
 
       <p id="scan-status" class="scan-status" hidden></p>
+
+      <button id="show-manual-ingredients" type="button" class="link-btn">Can't find the product? Check its ingredients directly →</button>
+
+      <form id="manual-ingredients-form" class="manual-ingredients-form" hidden>
+        <label for="manual-ingredients-text" class="manual-ingredients-label">Paste the ingredients list from the packaging</label>
+        <textarea id="manual-ingredients-text" rows="3" placeholder="e.g. Water, sugar, soy sauce (soybeans, wheat, salt), garlic, cornflour, rice vinegar…"></textarea>
+        <button type="submit" class="secondary-btn">Check ingredients</button>
+      </form>
     </div>
 
     <div id="result" class="result" hidden></div>

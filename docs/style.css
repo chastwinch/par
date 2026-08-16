@@ -245,6 +245,59 @@ body {
   color: var(--high-text);
 }
 
+.link-btn {
+  display: block;
+  margin: 1.25rem auto 0;
+  padding: 0.4rem;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.manual-ingredients-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.manual-ingredients-form[hidden] {
+  display: none;
+}
+
+.manual-ingredients-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.manual-ingredients-form textarea {
+  padding: 0.65rem 0.85rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+}
+
+.manual-ingredients-form textarea:focus {
+  border-color: var(--accent);
+}
+
+.manual-ingredients-form .secondary-btn {
+  align-self: flex-start;
+}
+
 #search {
   width: 100%;
   padding: 0.85rem 1rem;

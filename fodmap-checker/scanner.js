@@ -8,6 +8,9 @@
   const manualInput = document.getElementById("manual-barcode");
   const statusEl = document.getElementById("scan-status");
   const resultEl = document.getElementById("result");
+  const showIngredientsBtn = document.getElementById("show-manual-ingredients");
+  const ingredientsForm = document.getElementById("manual-ingredients-form");
+  const ingredientsTextarea = document.getElementById("manual-ingredients-text");
 
   let reader = null;
 
@@ -68,7 +71,7 @@
         <div class="result-card verdict-unknown">
           <div class="result-header"><span class="verdict-badge">❔ Product not found</span></div>
           <p class="verdict-summary">Barcode ${escapeHtml(code)} isn't in the Open Food Facts database.</p>
-          <p class="hint">Try searching for the food by name in the Search tab instead.</p>
+          <p class="hint">Coverage is crowdsourced, so store-brand and regional products are often missing. Try searching by name in the Search tab, or use "Check its ingredients directly" below to paste the ingredient list from the packaging instead.</p>
         </div>`;
       return;
     }
@@ -98,7 +101,7 @@
       <div class="result-card ${meta.className}">
         <div class="result-header">
           <span class="verdict-badge">${meta.icon} ${meta.label}</span>
-          <span class="category-tag">Packaged food</span>
+          <span class="category-tag">${code ? "Packaged food" : "Manual check"}</span>
         </div>
         <h2 class="food-name">${escapeHtml(product.product_name || "Unknown product")}</h2>
         ${product.brands ? `<p class="verdict-summary">${escapeHtml(product.brands)}</p>` : ""}
@@ -175,6 +178,19 @@
     if (!code) return;
     stopScanning();
     lookupBarcode(code);
+  });
+
+  showIngredientsBtn.addEventListener("click", () => {
+    ingredientsForm.hidden = !ingredientsForm.hidden;
+    if (!ingredientsForm.hidden) ingredientsTextarea.focus();
+  });
+
+  ingredientsForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = ingredientsTextarea.value.trim();
+    if (!text) return;
+    stopScanning();
+    renderProductResult({ product_name: "Pasted ingredients", ingredients_text_en: text }, null);
   });
 
   window.stopBarcodeScanning = stopScanning;
