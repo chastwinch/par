@@ -11,8 +11,54 @@
   const showIngredientsBtn = document.getElementById("show-manual-ingredients");
   const ingredientsForm = document.getElementById("manual-ingredients-form");
   const ingredientsTextarea = document.getElementById("manual-ingredients-text");
+  const ingredientsBarcodeInput = document.getElementById("manual-ingredients-barcode");
 
   let reader = null;
+
+  // Local, per-browser cache of barcode -> product info, so a product looked up once
+  // (from Open Food Facts, or typed in by hand) doesn't need re-fetching or re-typing
+  // next time the same barcode is scanned. This never leaves the device — it's not
+  // shared with Open Food Facts or anyone else.
+  const CACHE_KEY = "fodmap-checker:barcode-cache:v1";
+
+  function loadCache() {
+    try {
+      return JSON.parse(localStorage.getItem(CACHE_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function getCachedProduct(code) {
+    return loadCache()[code] || null;
+  }
+
+  function setCachedProduct(code, product) {
+    if (!code) return;
+    const cache = loadCache();
+    cache[code] = {
+      product_name: product.product_name || "",
+      brands: product.brands || "",
+      ingredients_text_en: product.ingredients_text_en || product.ingredients_text || "",
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch (e) {
+      // localStorage full or unavailable (e.g. private browsing) — the lookup still
+      // works this session, it just won't be remembered for next time.
+    }
+  }
+
+  function forgetCachedProduct(code) {
+    const cache = loadCache();
+    delete cache[code];
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch (e) {
+      /* ignore */
+    }
+  }
 
   function setStatus(text, isError) {
     if (!text) {
@@ -62,7 +108,8 @@
     }
   }
 
-  function renderProductResult(product, code) {
+  function renderProductResult(product, code, opts) {
+    opts = opts || {};
     resultEl.hidden = false;
     document.getElementById("empty-state") && (document.getElementById("empty-state").hidden = true);
 
@@ -71,8 +118,13 @@
         <div class="result-card verdict-unknown">
           <div class="result-header"><span class="verdict-badge">❔ Product not found</span></div>
           <p class="verdict-summary">Barcode ${escapeHtml(code)} isn't in the Open Food Facts database.</p>
-          <p class="hint">Coverage is crowdsourced, so store-brand and regional products are often missing. Try searching by name in the Search tab, or use "Check its ingredients directly" below to paste the ingredient list from the packaging instead.</p>
+          <p class="hint">Coverage is crowdsourced, so store-brand and regional products are often missing. Paste the ingredient list from the packaging below — it'll be saved so this exact barcode shows instantly next time.</p>
         </div>`;
+      // Prefill and reveal the ingredients form with this barcode already attached,
+      // so submitting it saves against the exact code that just failed to look up.
+      ingredientsBarcodeInput.value = code || "";
+      ingredientsForm.hidden = false;
+      ingredientsTextarea.focus();
       return;
     }
 
@@ -97,6 +149,13 @@
       ? `<div class="detail-row"><span class="detail-label">Ingredients</span><span>${highlightIngredients(ingredientsText, hits)}</span></div>`
       : "";
 
+    const savedNoteHtml = opts.fromCache
+      ? `<p class="saved-note">📋 Loaded from your saved ingredients for barcode ${escapeHtml(code)}.</p>
+         <button type="button" class="forget-btn" data-forget-code="${escapeHtml(code)}">Forget this saved entry</button>`
+      : opts.justSaved
+      ? `<p class="saved-note">✓ Saved — barcode ${escapeHtml(code)} will show this instantly next time, even offline.</p>`
+      : "";
+
     resultEl.innerHTML = `
       <div class="result-card ${meta.className}">
         <div class="result-header">
@@ -108,7 +167,16 @@
         <p class="verdict-summary">${meta.summary}</p>
         ${hitsHtml}
         ${ingredientsHtml}
+        ${savedNoteHtml}
       </div>`;
+
+    const forgetBtn = resultEl.querySelector("[data-forget-code]");
+    if (forgetBtn) {
+      forgetBtn.addEventListener("click", () => {
+        forgetCachedProduct(forgetBtn.dataset.forgetCode);
+        setStatus("Saved entry removed.");
+      });
+    }
   }
 
   function escapeHtml(str) {
@@ -155,12 +223,19 @@
   }
 
   async function lookupBarcode(code) {
+    const cached = getCachedProduct(code);
+    if (cached) {
+      renderProductResult(cached, code, { fromCache: true });
+      return;
+    }
+
     setStatus("Looking up barcode " + code + "…");
     try {
       const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
       const data = await res.json();
       setStatus("");
       if (data.status === 1 && data.product) {
+        setCachedProduct(code, data.product);
         renderProductResult(data.product, code);
       } else {
         renderProductResult(null, code);
@@ -189,8 +264,15 @@
     e.preventDefault();
     const text = ingredientsTextarea.value.trim();
     if (!text) return;
+    const code = ingredientsBarcodeInput.value.trim() || null;
     stopScanning();
-    renderProductResult({ product_name: "Pasted ingredients", ingredients_text_en: text }, null);
+
+    const product = { product_name: "Pasted ingredients", ingredients_text_en: text };
+    if (code) setCachedProduct(code, product);
+    renderProductResult(product, code, { justSaved: !!code });
+
+    ingredientsForm.reset();
+    ingredientsForm.hidden = true;
   });
 
   window.stopBarcodeScanning = stopScanning;

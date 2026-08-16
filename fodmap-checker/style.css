@@ -348,9 +348,34 @@ body {
   padding: 2rem 1rem;
 }
 
-.empty-state .hint {
+.hint {
+  color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.empty-state .hint {
   margin-top: 0.4rem;
+}
+
+.saved-note {
+  color: var(--low-text);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+.forget-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.forget-btn:hover {
+  color: var(--high-text);
 }
 
 .result-card {

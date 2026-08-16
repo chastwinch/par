@@ -16,7 +16,7 @@ python3 -m http.server 8000
 
 - `data.js` — the curated food database (name, aliases, category, verdict, safe serving, contributing FODMAPs, notes).
 - `app.js` — search/autocomplete, exact + fuzzy matching, result rendering, and the Search/Scan mode toggle.
-- `scanner.js` — camera barcode scanning (via `vendor/zxing.min.js`) and manual barcode entry, product lookup against the [Open Food Facts](https://world.openfoodfacts.org/) API, and ingredient screening.
+- `scanner.js` — camera barcode scanning (via `vendor/zxing.min.js`) and manual barcode entry, product lookup against the [Open Food Facts](https://world.openfoodfacts.org/) API, ingredient screening, and a `localStorage` cache keyed by barcode. Products found via the API are cached automatically; products not found can be entered by hand (ingredients + optional barcode) and are cached the same way, so repeat scans of that barcode resolve instantly without a network call. The cache is per-browser only — it isn't shared with Open Food Facts or synced across devices.
 - `ingredients.js` — keyword list used to screen a scanned product's ingredient text for common FODMAP triggers. This is a much blunter heuristic than the curated database — a "no known triggers" result means nothing matched, not that the product is verified safe.
 - `index.html` / `style.css` — layout and theme-aware styling (light/dark).
 
