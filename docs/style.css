@@ -388,6 +388,60 @@ body {
   font-weight: 600;
 }
 
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.fodmap-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.fodmap-tag.tag-low {
+  background: var(--low-bg);
+  border-color: var(--low-border);
+  color: var(--low-text);
+}
+
+.fodmap-tag.tag-moderate {
+  background: var(--moderate-bg);
+  border-color: var(--moderate-border);
+  color: var(--moderate-text);
+}
+
+.fodmap-tag.tag-high {
+  background: var(--high-bg);
+  border-color: var(--high-border);
+  color: var(--high-text);
+}
+
+mark.hl-moderate,
+mark.hl-high {
+  padding: 0.05rem 0.25rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+mark.hl-moderate {
+  background: var(--moderate-bg);
+  color: var(--moderate-text);
+  box-shadow: inset 0 0 0 1px var(--moderate-border);
+}
+
+mark.hl-high {
+  background: var(--high-bg);
+  color: var(--high-text);
+  box-shadow: inset 0 0 0 1px var(--high-border);
+}
+
 .closest-list {
   list-style: none;
   margin: 0.5rem 0 1rem;

@@ -82,7 +82,9 @@
     emptyStateEl.hidden = true;
     const meta = VERDICT_META[item.verdict];
     const fodmapsHtml = item.fodmaps && item.fodmaps.length
-      ? `<div class="detail-row"><span class="detail-label">Contains</span><span>${item.fodmaps.join(", ")}</span></div>`
+      ? `<div class="detail-row"><span class="detail-label">Why</span><span class="tag-row">${item.fodmaps
+          .map((f) => `<span class="fodmap-tag tag-${item.verdict}">${f}</span>`)
+          .join("")}</span></div>`
       : "";
     const notesHtml = item.notes
       ? `<div class="detail-row"><span class="detail-label">Notes</span><span>${item.notes}</span></div>`
@@ -96,8 +98,8 @@
         </div>
         <h2 class="food-name">${item.name}</h2>
         <p class="verdict-summary">${meta.summary}</p>
-        <div class="detail-row"><span class="detail-label">Safe serving</span><span>${item.serving}</span></div>
         ${fodmapsHtml}
+        <div class="detail-row"><span class="detail-label">Safe serving</span><span>${item.serving}</span></div>
         ${notesHtml}
       </div>
     `;

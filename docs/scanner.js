@@ -83,12 +83,15 @@
       unknown: { label: "No ingredient list available", icon: "❔", className: "verdict-unknown", summary: "This product doesn't have an ingredient list on file to screen." },
     };
     const meta = VERDICT_META[screen.verdict];
+    const hits = dedupeSubstringHits(screen.hits);
 
-    const hitsHtml = screen.hits.length
-      ? `<div class="detail-row"><span class="detail-label">Flagged</span><span>${screen.hits.map((h) => `${escapeHtml(h.keyword)} (${escapeHtml(h.fodmap)})`).join(", ")}</span></div>`
+    const hitsHtml = hits.length
+      ? `<div class="detail-row"><span class="detail-label">Why</span><span class="tag-row">${hits
+          .map((h) => `<span class="fodmap-tag tag-${h.verdict}" title="${escapeHtml(h.fodmap)}">${escapeHtml(h.keyword)}</span>`)
+          .join("")}</span></div>`
       : "";
     const ingredientsHtml = ingredientsText
-      ? `<div class="detail-row"><span class="detail-label">Ingredients</span><span>${escapeHtml(ingredientsText)}</span></div>`
+      ? `<div class="detail-row"><span class="detail-label">Ingredients</span><span>${highlightIngredients(ingredientsText, hits)}</span></div>`
       : "";
 
     resultEl.innerHTML = `
@@ -107,6 +110,45 @@
 
   function escapeHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Drops hits whose keyword is just a substring of another hit's keyword (e.g. "milk"
+  // inside "milk powder") so the flagged list doesn't list the same ingredient twice.
+  function dedupeSubstringHits(hits) {
+    const keywords = [...new Set(hits.map((h) => h.keyword))].sort((a, b) => b.length - a.length);
+    const kept = [];
+    for (const kw of keywords) {
+      if (!kept.some((longer) => longer.includes(kw))) kept.push(kw);
+    }
+    const keptSet = new Set(kept);
+    const seen = new Set();
+    return hits.filter((h) => {
+      if (!keptSet.has(h.keyword) || seen.has(h.keyword)) return false;
+      seen.add(h.keyword);
+      return true;
+    });
+  }
+
+  // Wraps each flagged trigger word in the ingredient text with a colored <mark>,
+  // so the reason for the verdict is visible in context, not just listed separately.
+  function highlightIngredients(text, hits) {
+    const escaped = escapeHtml(text);
+    if (!hits.length) return escaped;
+
+    const verdictByKeyword = new Map();
+    for (const hit of hits) {
+      if (!verdictByKeyword.has(hit.keyword)) verdictByKeyword.set(hit.keyword, hit.verdict);
+    }
+    // Longest keyword first so e.g. "milk powder" is matched (and highlighted whole)
+    // before the shorter "milk" keyword can split it.
+    const keywords = [...verdictByKeyword.keys()].sort((a, b) => b.length - a.length);
+    const pattern = keywords.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    const re = new RegExp(`(${pattern})`, "gi");
+
+    return escaped.replace(re, (match) => {
+      const verdict = verdictByKeyword.get(match.toLowerCase()) || "moderate";
+      return `<mark class="hl-${verdict}">${match}</mark>`;
+    });
   }
 
   async function lookupBarcode(code) {
