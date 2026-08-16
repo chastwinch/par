@@ -1,0 +1,210 @@
+# ============================================================
+# Tooth Quest — Automations
+# Add these three entries under the top-level `automation:` list
+# in configuration.yaml, or paste each one in via
+# Settings > Automations & Scenes > Create Automation > Edit in YAML.
+#
+# PLACEHOLDERS TO REPLACE:
+#   binary_sensor.xenos_toothbrush        -> your actual contact sensor entity
+#   media_player.bathroom                 -> your actual bathroom media_player entity
+#   notify.mobile_app_parent_phone        -> your actual mobile_app notify service
+#   media-source://media_source/local/tooth_quest/*.mp3
+#                                          -> paths to your MP3s in /config/media
+# ============================================================
+
+automation:
+  # ----------------------------------------------------------
+  # 1. Brushing logic — sensor closes, duration decides outcome
+  # ----------------------------------------------------------
+  - id: tooth_quest_xeno_brushing_logic
+    alias: "Tooth Quest - Xeno Brushing Logic"
+    description: >
+      Evaluates how long Xeno's toothbrush was off the holder and
+      auto-approves, queues for review, or ignores the event.
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.xenos_toothbrush
+        from: "on"
+        to: "off"
+    variables:
+      open_duration: >
+        {{ (as_timestamp(trigger.to_state.last_changed)
+            - as_timestamp(trigger.from_state.last_changed)) | round(0) }}
+      is_am_window: "{{ now().strftime('%H:%M') >= '06:00' and now().strftime('%H:%M') <= '09:00' }}"
+      is_pm_window: "{{ now().strftime('%H:%M') >= '18:00' and now().strftime('%H:%M') <= '20:00' }}"
+      current_period: "{{ 'am' if is_am_window else 'pm' if is_pm_window else 'none' }}"
+    condition:
+      - condition: template
+        value_template: "{{ current_period != 'none' }}"
+    action:
+      - choose:
+          # --- Scenario A: valid brush, >= 120s -> auto-approve ---
+          - conditions:
+              - condition: template
+                value_template: "{{ open_duration | int >= 120 }}"
+            sequence:
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ current_period == 'am' }}"
+                    sequence:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: input_boolean.xeno_brushed_am
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ current_period == 'pm' }}"
+                    sequence:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: input_boolean.xeno_brushed_pm
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.xeno_pocket_money
+                data:
+                  value: >
+                    {{ [states('input_number.xeno_pocket_money') | float(0) + 0.75, 45] | min | round(2) }}
+              - service: media_player.play_media
+                target:
+                  entity_id: media_player.bathroom
+                data:
+                  media_content_id: media-source://media_source/local/tooth_quest/success.mp3
+                  media_content_type: music
+
+          # --- Scenario B: rushed brush, 10-119s -> send for review ---
+          - conditions:
+              - condition: template
+                value_template: "{{ open_duration | int >= 10 and open_duration | int < 120 }}"
+            sequence:
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.xeno_pending_period
+                data:
+                  value: "{{ current_period }}"
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.xeno_brushed_pending
+              - service: media_player.play_media
+                target:
+                  entity_id: media_player.bathroom
+                data:
+                  media_content_id: media-source://media_source/local/tooth_quest/pending_review.mp3
+                  media_content_type: music
+              - service: notify.mobile_app_parent_phone
+                data:
+                  title: "🪥 Tooth Quest: Review Needed"
+                  message: >
+                    Xeno's {{ current_period | upper }} brush only lasted {{ open_duration | int }}s.
+                    Approve the 75p reward?
+                  data:
+                    tag: "tooth_quest_xeno_{{ current_period }}"
+                    actions:
+                      - action: "APPROVE_XENO"
+                        title: "✅ Approve"
+                      - action: "DENY_XENO"
+                        title: "❌ Deny"
+
+        # --- Scenario C: < 10s -> do nothing (filters accidental knocks) ---
+        default: []
+
+  # ----------------------------------------------------------
+  # 2. Notification listener — parent taps Approve/Deny
+  # ----------------------------------------------------------
+  - id: tooth_quest_notification_actions
+    alias: "Tooth Quest - Notification Actions"
+    description: Handles the Approve/Deny actionable notification buttons.
+    mode: single
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+    action:
+      - choose:
+          # --- Approve ---
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.event.data.action == 'APPROVE_XENO' }}"
+            sequence:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.xeno_brushed_pending
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ states('input_text.xeno_pending_period') == 'am' }}"
+                    sequence:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: input_boolean.xeno_brushed_am
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ states('input_text.xeno_pending_period') == 'pm' }}"
+                    sequence:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: input_boolean.xeno_brushed_pm
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.xeno_pocket_money
+                data:
+                  value: >
+                    {{ [states('input_number.xeno_pocket_money') | float(0) + 0.75, 45] | min | round(2) }}
+              - service: media_player.play_media
+                target:
+                  entity_id: media_player.bathroom
+                data:
+                  media_content_id: media-source://media_source/local/tooth_quest/success.mp3
+                  media_content_type: music
+
+          # --- Deny ---
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.event.data.action == 'DENY_XENO' }}"
+            sequence:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.xeno_brushed_pending
+              - service: media_player.play_media
+                target:
+                  entity_id: media_player.bathroom
+                data:
+                  media_content_id: media-source://media_source/local/tooth_quest/sad_trombone.mp3
+                  media_content_type: music
+
+  # ----------------------------------------------------------
+  # 3. Monthly reset — last day of the month at 23:59
+  # ----------------------------------------------------------
+  - id: tooth_quest_monthly_reset
+    alias: "Tooth Quest - Monthly Payout Reset"
+    description: Reports the final balance and resets everything for the new month.
+    mode: single
+    trigger:
+      - platform: time
+        at: "23:59:00"
+    condition:
+      # True only if tomorrow rolls into a new month, i.e. today is the last day.
+      - condition: template
+        value_template: "{{ (now() + timedelta(days=1)).month != now().month }}"
+    action:
+      - service: notify.mobile_app_parent_phone
+        data:
+          title: "🪥 Tooth Quest: Monthly Payout"
+          message: >
+            Xeno's final balance this month: £{{ states('input_number.xeno_pocket_money') }}.
+            Balance has been reset for the new month.
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.xeno_pocket_money
+        data:
+          value: 0
+      - service: input_boolean.turn_off
+        target:
+          entity_id:
+            - input_boolean.xeno_brushed_am
+            - input_boolean.xeno_brushed_pm
+            - input_boolean.xeno_brushed_pending
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.xeno_pending_period
+        data:
+          value: ""
