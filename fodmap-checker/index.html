@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FODMAP Food Checker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>FODMAP Food Checker</h1>
+      <p class="subtitle">Type a food to see if it's low, moderate, or high FODMAP — and how much is safe.</p>
+    </header>
+
+    <div class="search-wrap">
+      <input
+        id="search"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Type a food, e.g. &quot;onion&quot;, &quot;banana&quot;, &quot;cheese&quot;…"
+        aria-label="Search for a food"
+      />
+      <ul id="suggestions" class="suggestions" hidden></ul>
+    </div>
+
+    <div id="result" class="result" hidden></div>
+
+    <div id="empty-state" class="empty-state">
+      <p>Start typing a food name above.</p>
+      <p class="hint">Try: garlic, apple, rice, cheddar, chickpeas, oat milk…</p>
+    </div>
+
+    <footer class="footer">
+      <p>
+        <strong>Not medical advice.</strong> FODMAP tolerance is individual and dose-dependent.
+        This is general educational guidance for a low-FODMAP elimination phase — verify against the
+        <a href="https://www.monashfodmap.com/" target="_blank" rel="noopener noreferrer">Monash University FODMAP app</a>
+        (the gold-standard, regularly lab-tested reference) and work with an accredited dietitian,
+        especially for the reintroduction phase.
+      </p>
+    </footer>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
