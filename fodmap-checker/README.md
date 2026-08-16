@@ -1,4 +1,4 @@
-# FODMAP Food Checker
+# Can I Eat
 
 A small static web app: type in a food (or scan a packaged product's barcode) and get a verdict — **low / moderate / high FODMAP** — plus a suggested safe serving size and which FODMAP group is responsible (fructans, lactose, excess fructose, GOS, or polyols).
 

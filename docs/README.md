@@ -1,6 +1,6 @@
 > **Note:** this folder is a mirror of [`fodmap-checker/`](../fodmap-checker) — it exists solely because GitHub Pages can only deploy from a branch's `/(root)` or `/docs` folder, not an arbitrary subfolder. Make changes in `fodmap-checker/` and copy them here (`cp -r fodmap-checker/* docs/`) rather than editing this copy directly.
 
-# FODMAP Food Checker
+# Can I Eat
 
 A small static web app: type in a food (or scan a packaged product's barcode) and get a verdict — **low / moderate / high FODMAP** — plus a suggested safe serving size and which FODMAP group is responsible (fructans, lactose, excess fructose, GOS, or polyols).
 
