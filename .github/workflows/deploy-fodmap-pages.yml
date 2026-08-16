@@ -1,3 +1,4 @@
+# Deploys fodmap-checker/ to GitHub Pages.
 name: Deploy FODMAP Checker to Pages
 
 on:
